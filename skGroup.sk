@@ -1,0 +1,347 @@
+﻿# skGroup
+# Skripted group-based permission and prefix system.
+
+# ╔═════════════════════╗
+# ║			            ║
+# ║       Options	    ║
+# ║			            ║
+# ╚═════════════════════╝
+
+options:
+	use-custom-chat: true
+	prefix: &8[&3&lSKGROUP&8]&7
+	per-world-chat: false
+	default-prefix: &8[&7DEFAULT&8] &7
+	# Chat Formatting (Read README.txt for more information)
+	
+	default-chat-format: <prefix><player><suffix>&7: <message>
+	admin-chat-format: <prefix><player><suffix>&f: <message>
+	
+	# CHAT COLORS
+	
+	default-can-use-colors: false 
+	# DANGEROUS TO ENABLE because chat colors mean they can send clickable commands to op them.
+	# Reccomended to keep off.
+	
+	admin-can-use-colors: true
+	
+	
+	# TAG PRIORITY
+	#
+	# If group tag priority is higher, then the tag of the player will be set to the group tag
+	# if the group tag is set, otherwise it will be set to the player tag.
+	#
+	# If the player tag priority is higher, then the tag of the player will be set to the player
+	# tag if it is set, otherwise it will be set to the group tag.
+	#
+	# If both values are the same, the skript will choose player over group.
+	
+	group-tag-priority: 1
+	player-tag-priority: 2
+	
+	# Note that plugins do NOT override this!
+	no-permission-message: &cYou do not have permission to run this command!
+	
+	
+Command /skg [<text>] [<text>] [<text>] [<text>]:
+	aliases: /skgroup
+	trigger:
+		arg-1 is not set:
+			send "&c[&lPLEASE &cSEE README.TXT BEFORE MANAGING PERMISSIONS!]"
+			send "{@prefix} Group Commands:"
+			send "&7/skg group [group name] create (Create a new group)"
+			send "&7/skg group [group name] prefix [prefix|remove] (Define a prefix for a group)"
+			send "&7/skg group [group name] suffix [suffix|remove] (Define a suffix for a group)"
+			send "&7/skg group [group name] addperm [skGroup node] (Add a permission node to a group)"
+			send "&7/skg group [group name] removeperm [skGroup node] (Add a permission node to a group)"
+			send "&7/skg group [group name] listperms (Lists the permissions for the group)"
+			send ""
+			send "{@prefix} Player Commands:"
+			send "&7/skg player [player name] prefix [prefix|remove] (Define a prefix for a player)"
+			send "&7/skg player [player name] suffix [suffix|remove] (Define a suffix for a player)"
+			send "&7/skg player [player name] setgroup [group name] (Define a suffix for a player)"
+			send "&7/skg player [player name] addperm [skGroup node] (Add a permission node to a player)"
+			send "&7/skg player [player name] removeperm [skGroup node] (Add a permission node to a player)"
+			send "&7/skg player [player name] listperms (Lists the permissions for the player)"
+		
+		else if arg-1 is "group":
+			arg-2 is set:
+				arg-3 is "create":
+					{group.%arg-2%.players::*} is set:
+						send "{@prefix} A group with that name already exists."
+					else:
+						send "{@prefix} Group '%arg-2%' created successfully."
+						delete {group.%arg-2%.players::*}
+						
+				else if arg-3 is "prefix":
+					arg-4 is "remove":
+						send "{@prefix} Prefix for group '%arg-2%' was removed."
+						delete {group.%arg-2%.prefix}
+					else:
+						send "{@prefix} Prefix for group '%arg-2%' set to '%arg-4%&7'."
+						set {group.%arg-2%.prefix} to arg-4
+					
+				else if arg-3 is "suffix":
+					arg-4 is "remove":
+						send "{@prefix} Suffix for group '%arg-2%' was removed."
+						delete {group.%arg-2%.suffix}
+					else:
+						send "{@prefix} Suffix for group '%arg-2%' set to '%arg-4%&7'."
+						set {group.%arg-2%.suffix} to arg-4
+					
+				else if arg-3 is "addperm":
+					{group.%arg-2%.perms::*} contains arg-4:
+						send "{@prefix} Group '%arg-2%' already has permission '%arg-4%'."
+					else:
+						add arg-4 to {group.%arg-2%.perms::*}
+						send "{@prefix} Permission '%arg-4%' added to group '%arg-2%'."
+						
+				else if arg-3 is "removeperm":
+					{group.%arg-2%.perms::*} contains arg-4:
+						remove arg-4 from {group.%arg-2%.perms::*}
+					else:
+						send "{@prefix} Group '%arg-2%' doesn't have permission '%arg-4%'."
+				else if arg-3 is "listperms":
+					send "{@prefix} Permissions of group '%arg-2%':"
+					size of {group.%arg-2%.perms::*} > 50:
+						send "&c&lWARNING! &7Group '%arg-2%' has more than 50 permissions."
+						send "&7Please click the 'CONFIRM' to confirm sending the message."
+						send "<cmd:/skg send %arg-2%>&a&l[CONFIRM]"
+					else:
+						set {group.%arg-2%.perms::*} to sorted {group.%arg-2%.perms::*}
+						loop {group.%arg-2%.perms::*}:
+							send "&7- %loop-value%"
+							
+			else:
+				send "&c[&lPLEASE &cSEE README.TXT BEFORE MANAGING PERMISSIONS!]"
+				send "{@prefix} Group Commands:"
+				send "&7/skg group [group name] create (Create a new group)"
+				send "&7/skg group [group name] prefix (prefix) (Define a prefix for a group)"
+				send "&7/skg group [group name] suffix (suffix) (Define a suffix for a group)"
+				send "&7/skg group [group name] addperm (custom-node) (Add a permission node to a group)"
+				send "&7/skg group [group name] removeperm (custom-node) (Add a permission node to a group)"
+				send "&7/skg group [group name] listperms (Lists the permissions for the group)"
+				
+		else if arg-1 is "send":
+			set {group.%arg-2%.perms::*} to sorted {group.%arg-2%.perms::*}
+			loop {group.%arg-2%.perms::*}:
+				send "&7- %loop-value%"
+		else if arg-1 is "sende":
+			set {permissions.%uuid of arg-2 parsed as player%::*} to sorted {group.%arg-2%.perms::*}
+			loop {group.%arg-2%.perms::*}:
+				send "&7- %loop-value%"
+		else if arg-1 is "player":
+			arg-3 is "prefix":
+				arg-4 is "remove":
+					send "{@prefix} Prefix for player '%arg-2%' was removed."
+					delete {prefix.%uuid of arg-2 parsed as offlineplayer%}
+				else:
+					send "{@prefix} Prefix for player '%arg-2%' set to '%arg-4%&7'."
+					set {prefix.%uuid of arg-2 parsed as offlineplayer%} to arg-4
+				
+			else if arg-3 is "suffix":
+				arg-4 is "remove":
+					send "{@prefix} Suffix for player '%arg-2%' was removed."
+					delete {suffix.%uuid of arg-2 parsed as offlineplayer%}
+				else:
+					send "{@prefix} Prefix for player '%arg-2%' set to '%arg-4%&7'."
+					set {suffix.%uuid of arg-2 parsed as offlineplayer%} to arg-4
+				
+			else if arg-3 is "addperm":
+				{permissions.%uuid of arg-2 parsed as player%::*} contains arg-4:
+					send "{@prefix} Player '%arg-2%' already has permission '%arg-4%'."
+				else:
+					add arg-4 to {permissions.%uuid of arg-2 parsed as player%::*}
+					
+			else if arg-3 is "removeperm":
+				{permissions.%uuid of arg-2 parsed as player%::*} contains arg-4:
+					remove arg-4 from {permissions.%uuid of arg-2 parsed as player%::*}
+				else:
+					send "{@prefix} Player '%arg-2%' doesn't have permission '%arg-4%'."
+			else if arg-3 is "listperms":
+				send "{@prefix} Permissions of player '%arg-2%':"
+				size of {permissions.%uuid of arg-2 parsed as player%::*} > 50:
+					send "&c&lWARNING! &7Group '%arg-2%' has more than 50 permissions."
+					send "&7Please click the 'CONFIRM' to confirm sending the message."
+					send "<cmd:/skg sende %arg-2%>&a&l[CONFIRM]"
+				else:
+					set {permissions.%uuid of arg-2 parsed as player%::*} to sorted {permissions.%uuid of arg-2 parsed as player%::*}
+					loop {permissions.%uuid of arg-2 parsed as player%::*}:
+						send "&7- %loop-value%"
+			else if arg-3 is "getinfo":
+				send "{@prefix} Info on %arg-2%:"
+				send "&7- Prefix: %{prefix.%uuid of player%}%"
+				send "&7- Suffix: %{suffix.%uuid of player%}%"
+				send "&7- Group: %{group.%uuid of arg-2 parsed as offline player%}%"
+				send "&7- Permission Nodes: %size of {permissions.%uuid of arg-2 parsed as offlineplayer%::*}%"
+			else if arg-3 is "setgroup":
+				send "{@prefix} Player '%arg-2%' was moved to group '%arg-4%'"
+				set {group.%uuid of arg-2 parsed as offline player%} to arg-4
+			else:
+				send "{@prefix} Player Commands:"
+				send "&7/skg player [player name] prefix [prefix|remove] (Define a prefix for a player)"
+				send "&7/skg player [player name] suffix [suffix|remove] (Define a suffix for a player)"
+				send "&7/skg player [player name] setgroup [group name] (Define a suffix for a player)"
+				send "&7/skg player [player name] addperm [custom-node[ (Add a permission node to a player)"
+				send "&7/skg player [player name] removeperm [custom-node] (Add a permission node to a player)"
+				send "&7/skg player [player name] listperms (Lists the permissions for the player)"
+						
+		else:
+			send "&c[&lPLEASE &cSEE README.TXT BEFORE MANAGING PERMISSIONS!]"
+			send "{@prefix} Group Commands:"
+			send "&7/skg group [group name] create (Create a new group)"
+			send "&7/skg group [group name] prefix [prefix|remove] (Define a prefix for a group)"
+			send "&7/skg group [group name] suffix [suffix|remove] (Define a suffix for a group)"
+			send "&7/skg group [group name] addperm [custom-node] (Add a permission node to a group)"
+			send "&7/skg group [group name] removeperm [custom-node] (Add a permission node to a group)"
+			send "&7/skg group [group name] listperms (Lists the permissions for the group)"
+			send ""
+			send "{@prefix} Player Commands:"
+			send "&7/skg player [player name] prefix [prefix) (Define a prefix for a player)"
+			send "&7/skg player [player name] suffix [suffix) (Define a suffix for a player)"
+			send "&7/skg player [player name] setgroup [group name] (Define a suffix for a player)"
+			send "&7/skg player [player name] addperm [custom-node] (Add a permission node to a player)"
+			send "&7/skg player [player name] removeperm [custom-node[ (Add a permission node to a player)"
+			send "&7/skg player [player name] listperms (Lists the permissions for the player)"
+			send "&7/skg player [player name] getinfo (Gives information on the player)"
+# Permission management
+on command:
+	command sender is a player
+	player is not op
+	
+	# Get all permissions
+	
+	set {_combinedPermissions::*} to {permissions.%uuid of player%::*}
+	loop {group.%{group.%uuid of player%}%.perms::*}:
+		add loop-value to {_combinedPermissions::*}
+	loop {defaultperms::*}:
+		add loop-value to {_combinedPermissions::*}
+	# Convert command to custom permission nodes
+	
+	set {_cmd} to full command
+	replace every " " in {_cmd} with "."
+	{_combinedPermissions::*} doesn't contain {_cmd}:
+		cancel event
+		send "{@no-permission-message}"
+	else if {_combinedPermissions::*} is not set:
+		cancel event
+		send "{@no-permission-message}"
+	
+#Chat Management
+on chat:
+	{@use-custom-chat} is true
+	cancel event
+	player is op:
+		set {_format} to "{@admin-chat-format}"
+		("{@player-tag-priority}" parsed as number) > ("{@group-tag-priority}" parsed as number):
+			{prefix.%uuid of player%} is set:
+				replace "<prefix>" in {_format} with {prefix.%uuid of player%}
+			else if {group.%{group.%uuid of player%}%.prefix} is set:
+				replace "<prefix>" in {_format} with {group.%{group.%uuid of player%}%.prefix}
+			else:
+				replace "<prefix>" in {_format} with "{@default-prefix}"
+		else if ("{@player-tag-priority}" parsed as number) = ("{@group-tag-priority}" parsed as number):
+			{prefix.%uuid of player%} is set:
+				replace "<prefix>" in {_format} with {prefix.%uuid of player%}
+			else if {group.%{group.%uuid of player%}%.prefix} is set:
+				replace "<prefix>" in {_format} with {group.%{group.%uuid of player%}%.prefix}
+			else:
+				replace "<prefix>" in {_format} with "{@default-prefix}"
+		else:
+			{group.%{group.%uuid of player%}%.prefix} is set:
+				replace "<prefix>" in {_format} with {group.%{group.%uuid of player%}%.prefix}
+			else if {prefix.%uuid of player%} is set:
+				replace "<prefix>" in {_format} with {prefix.%uuid of player%}
+			else:
+				replace "<prefix>" in {_format} with "{@default-prefix}"
+		replace "<player>" in {_format} with "%player%"
+		("{@player-tag-priority}" parsed as number) > ("{@group-tag-priority}" parsed as number):
+			{suffix.%uuid of player%} is set:
+				replace "<suffix>" in {_format} with {suffix.%uuid of player%}
+			else if {group.%{group.%uuid of player%}%.suffix} is set:
+				replace "<suffix>" in {_format} with {group.%{group.%uuid of player%}%.suffix}
+			else:
+				replace "<suffix>" in {_format} with ""
+		else if ("{@player-tag-priority}" parsed as number) = ("{@group-tag-priority}" parsed as number):
+			{suffix.%uuid of player%} is set:
+				replace "<suffix>" in {_format} with {suffix.%uuid of player%}
+			else if {group.%{group.%uuid of player%}%.suffix} is set:
+				replace "<suffix>" in {_format} with {group.%{group.%uuid of player%}%.suffix}
+			else:
+				replace "<suffix>" in {_format} with ""
+		else:
+			{suffix.%uuid of player%} is set:
+				replace "<suffix>" in {_format} with {suffix.%uuid of player%}
+			else if {group.%{group.%uuid of player%}%.suffix} is set:
+				replace "<suffix>" in {_format} with {group.%{group.%uuid of player%}%.suffix}
+			else:
+				replace "<suffix>" in {_format} with ""
+		replace "<message>" in {_format} with message
+		{@admin-can-use-colors} is true:
+			{@per-world-chat} is true:
+				broadcast colored "%{_format}%" to world of player
+			else:
+				broadcast colored "%{_format}%"
+		else:
+			{@per-world-chat} is true:
+				broadcast "%{_format}%" to world of player
+			else:
+				broadcast "%{_format}%"
+		
+	else:
+		set {_format} to "{@default-chat-format}"
+		("{@player-tag-priority}" parsed as number) > ("{@group-tag-priority}" parsed as number):
+			{prefix.%uuid of player%} is set:
+				replace "<prefix>" in {_format} with {prefix.%uuid of player%}
+			else if {group.%{group.%uuid of player%}%.prefix} is set:
+				replace "<prefix>" in {_format} with {group.%{group.%uuid of player%}%.prefix}
+			else:
+				replace "<prefix>" in {_format} with "{@default-prefix}"
+		else if ("{@player-tag-priority}" parsed as number) = ("{@group-tag-priority}" parsed as number):
+			{prefix.%uuid of player%} is set:
+				replace "<prefix>" in {_format} with {prefix.%uuid of player%}
+			else if {group.%{group.%uuid of player%}%.prefix} is set:
+				replace "<prefix>" in {_format} with {group.%{group.%uuid of player%}%.prefix}
+			else:
+				replace "<prefix>" in {_format} with "{@default-prefix}"
+		else:
+			{group.%{group.%uuid of player%}%.prefix} is set:
+				replace "<prefix>" in {_format} with {group.%{group.%uuid of player%}%.prefix}
+			else if {prefix.%uuid of player%} is set:
+				replace "<prefix>" in {_format} with {prefix.%uuid of player%}
+			else:
+				replace "<prefix>" in {_format} with "{@default-prefix}"
+		replace "<player>" in {_format} with "%player%"
+		("{@player-tag-priority}" parsed as number) > ("{@group-tag-priority}" parsed as number):
+			{suffix.%uuid of player%} is set:
+				replace "<suffix>" in {_format} with {suffix.%uuid of player%}
+			else if {group.%{group.%uuid of player%}%.suffix} is set:
+				replace "<suffix>" in {_format} with {group.%{group.%uuid of player%}%.suffix}
+			else:
+				replace "<suffix>" in {_format} with ""
+		else if ("{@player-tag-priority}" parsed as number) = ("{@group-tag-priority}" parsed as number):
+			{suffix.%uuid of player%} is set:
+				replace "<suffix>" in {_format} with {suffix.%uuid of player%}
+			else if {group.%{group.%uuid of player%}%.suffix} is set:
+				replace "<suffix>" in {_format} with {group.%{group.%uuid of player%}%.suffix}
+			else:
+				replace "<suffix>" in {_format} with ""
+		else:
+			{suffix.%uuid of player%} is set:
+				replace "<suffix>" in {_format} with {suffix.%uuid of player%}
+			else if {group.%{group.%uuid of player%}%.suffix} is set:
+				replace "<suffix>" in {_format} with {group.%{group.%uuid of player%}%.suffix}
+			else:
+				replace "<suffix>" in {_format} with ""
+		{@default-can-use-colors} is true:
+			replace "<message>" in {_format} with colored message
+			{@per-world-chat} is true:
+				broadcast colored "%{_format}%" to world of player
+			else:
+				broadcast colored "%{_format}%"
+		else:
+			replace "<message>" in {_format} with uncolored message
+			{@per-world-chat} is true:
+				broadcast colored "%{_format}%" to world of player
+			else:
+				broadcast colored "%{_format}%"
